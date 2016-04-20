@@ -31,7 +31,7 @@ public class AudEncoder {
             synchronized (AudEncoder.class){
                 if(audEncoder==null){
                     audEncoder=new AudEncoder();
-                    Log.d("getInstance","new Audio");
+                    Log.d("getInstance","创建了新音频对象");
                 }
             }
         }
@@ -48,19 +48,19 @@ public class AudEncoder {
         }
 
         if(!initLocalSocket()){
-            Log.d(LOG,"localSocket falt");
+            Log.d(LOG,"本地网络初始化错误");
             releaseAll();
             return;
         }
 
         if(!initAudioRecorder()){
-            Log.d(LOG,"initAudioRecorder falt");
+            Log.d(LOG,"录音初始化错误");
             releaseAll();
             return;
         }
 
         this.isAudioRecording=true;
-        Log.d(LOG, "strat rcv");
+        Log.d(LOG, "开始录音");
         startAudioRecording();//开始录音
     }
 
@@ -78,16 +78,16 @@ public class AudEncoder {
 
     private boolean initAudioRecorder() {
         if(audioRecorder !=null){
-            Log.d(LOG,"audioRecord!=null");
+            Log.d(LOG,"有录音对象");
             audioRecorder.reset();
             audioRecorder.release();
         }else {
-            Log.d(LOG,"no has a proect");
+            Log.d(LOG,"没有对象");
             return true;
         }
         audioRecorder=new MediaRecorder();
         if(audioRecorder!=null){
-            Log.d(LOG,"has a proect");
+            Log.d(LOG,"有一个录音对象");
         }
         audioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         audioRecorder.setOutputFormat(MediaRecorder.OutputFormat.RAW_AMR);
@@ -96,7 +96,7 @@ public class AudEncoder {
         audioRecorder.setAudioSamplingRate(8000);           //取样频率
         audioRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
         audioRecorder.setOutputFile(sender.getFileDescriptor());
-        Log.d(LOG,"audio setup ok");
+        Log.d(LOG,"音频设置 ok");
         boolean ret=true;
         try {
             audioRecorder.prepare();
@@ -105,7 +105,7 @@ public class AudEncoder {
 
         }catch (Exception e){
             releaseMediaRecorder();
-            Log.d(LOG,"not record");
+            Log.d(LOG,"录音开始错误");
             ret =false;
         }
         return ret;
@@ -123,7 +123,7 @@ public class AudEncoder {
                 return;
             }
             if(isAudioRecording){
-                Log.d(LOG,"reco.stop ok");
+                Log.d(LOG,"录音停止 ok");
                 audioRecorder.stop();
                 isAudioRecording=false;
             }
@@ -131,7 +131,7 @@ public class AudEncoder {
             audioRecorder.release();
             audioRecorder=null;
         }catch (Exception err){
-            Log.e(TAG, "relRecoErro");
+            Log.e(TAG, "录音停止出错");
         }
     }
 
@@ -190,15 +190,15 @@ public class AudEncoder {
 
         private void sendAmrAudio() throws Exception{
             //DatagramSocket udpSocket=new DatagramSocket();
-            Log.d(TAG,"xian cheng streat");
+            Log.d(TAG,"录音线程开始");
             DataInputStream dataInput=new DataInputStream(receiver.getInputStream());
             skipAmrHead(dataInput);
             final int SEND_FRAME_COUNT_ONE_TIME=10;
             final int BLOCK_SIZE[]={12,13,15,17,19,20,26,31,5,0,0,0,0,0,0,0};
             byte[] sendBuffer=new byte[1024];
-            Log.d(LOG,"eocode1");
+            Log.d(LOG,"音频编码1");
             while (isAudioRecording()){
-                Log.d(LOG,"encode2");
+                Log.d(LOG,"音频编码2");
                 int offset=0;
                 for (int index=0;index<SEND_FRAME_COUNT_ONE_TIME;++index){
                     if(!isAudioRecording()){
@@ -210,7 +210,7 @@ public class AudEncoder {
                     readSomeData(sendBuffer,offset+1,frameLength,dataInput);
                     offset+=frameLength+1;
                 }
-                Log.d(LOG, "encode end");
+                Log.d(LOG, "编码结束");
                 //udpSend(udpSocket, sendBuffer, offset);
             }
             //udpSocket.close();
@@ -222,7 +222,9 @@ public class AudEncoder {
             int result = -1;
             int state = 0;
             try {
+                Log.d(LOG,"取数据流");
                 while (-1 != (result = dataInput.readByte())) {
+                    Log.d(LOG,"什么鬼循环");
                     if (AMR_HEAD[0] == result) {
                         state = (0 == state) ? 1 : 0;
                     } else if (AMR_HEAD[1] == result) {
@@ -241,8 +243,9 @@ public class AudEncoder {
                         break;
                     }
                 }
+                Log.d(LOG,"正常退出循环");
             } catch (Exception e) {
-                Log.e(TAG, "read mdat error...");
+                Log.e(TAG, "ram编码异常");
             }
         }
         private void readSomeData(byte[] buffer, int offset, int length, DataInputStream dataInput) {
@@ -251,7 +254,7 @@ public class AudEncoder {
                 try {
                     numOfRead = dataInput.read(buffer, offset, length);
                     if (numOfRead == -1) {
-                        Log.d(TAG, "amr...no data get wait for data coming.....");
+                        Log.d(TAG, "amr...没有取得数据");
                         Thread.sleep(100);
                     } else {
                         offset += numOfRead;
@@ -261,7 +264,7 @@ public class AudEncoder {
                         }
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "amr..error readSomeData");
+                    Log.e(TAG, "amr..异常");
                     break;
                 }
             }
